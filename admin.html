@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black Hat One - Admin Panel</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Share Tech Mono', monospace; }
+
+        body {
+            background: #050508;
+            color: #e0e6ed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===================== PIN SCREEN ===================== */
+        #pinScreen {
+            position: fixed;
+            inset: 0;
+            background: #050508;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            gap: 30px;
+        }
+
+        .pin-logo {
+            font-size: 1.2rem;
+            color: #c4ff00;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(196,255,0,0.5);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+        .pin-logo span { color: #00f3ff; }
+
+        .pin-title {
+            color: #a0aec0;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+        }
+
+        .pin-dots {
+            display: flex;
+            gap: 18px;
+        }
+
+        .pin-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(196,255,0,0.4);
+            transition: all 0.2s ease;
+        }
+        .pin-dot.filled {
+            background: #c4ff00;
+            box-shadow: 0 0 10px rgba(196,255,0,0.8);
+            border-color: #c4ff00;
+        }
+        .pin-dot.error {
+            background: #ff003c;
+            border-color: #ff003c;
+            box-shadow: 0 0 10px rgba(255,0,60,0.8);
+        }
+
+        .pin-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 70px);
+            gap: 12px;
+        }
+
+        .pin-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: #090c13;
+            border: 2px solid rgba(0,243,255,0.3);
+            color: #e0e6ed;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pin-btn:hover {
+            background: rgba(196,255,0,0.1);
+            border-color: #c4ff00;
+            color: #c4ff00;
+            box-shadow: 0 0 15px rgba(196,255,0,0.3);
+        }
+
+        .pin-btn:active { transform: scale(0.93); }
+
+        .pin-btn.del {
+            color: #ff003c;
+            border-color: rgba(255,0,60,0.3);
+        }
+        .pin-btn.del:hover {
+            background: rgba(255,0,60,0.1);
+            border-color: #ff003c;
+            box-shadow: 0 0 15px rgba(255,0,60,0.3);
+        }
+
+        .pin-error-msg {
+            color: #ff003c;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            min-height: 1.2em;
+            text-shadow: 0 0 8px rgba(255,0,60,0.5);
+        }
+
+        /* ===================== ADMIN PANEL ===================== */
+        #adminPanel { display: none; flex-direction: column; min-height: 100vh; padding: 30px; }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #00f3ff;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .admin-header h1 { color: #c4ff00; font-size: 1.3rem; }
+
+        .header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+        .btn {
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary { background: #c4ff00; color: #000; }
+        .btn-primary:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(196,255,0,0.4); }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #00f3ff;
+            color: #00f3ff;
+        }
+        .btn-outline:hover { background: rgba(0,243,255,0.1); transform: translateY(-2px); }
+
+        .btn-danger {
+            background: transparent;
+            border: 1px solid rgba(255,0,60,0.5);
+            color: #ff003c;
+        }
+        .btn-danger:hover { background: rgba(255,0,60,0.1); }
+
+        /* ===== Category Selector Tabs ===== */
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            border-radius: 6px;
+            background: #090c13;
+            border: 1px solid rgba(0,243,255,0.2);
+            color: #a0aec0;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover { border-color: rgba(196,255,0,0.5); color: #c4ff00; }
+        .tab-btn.active {
+            background: rgba(196,255,0,0.12);
+            border-color: #c4ff00;
+            color: #c4ff00;
+            box-shadow: 0 0 12px rgba(196,255,0,0.2);
+        }
+
+        /* ===== Editor Card ===== */
+        .editor-card {
+            background: #090c13;
+            border: 1px solid rgba(0,243,255,0.2);
+            border-radius: 12px;
+            padding: 30px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .editor-card h2 {
+            color: #00f3ff;
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .field-group { margin-bottom: 20px; }
+
+        label { display: block; margin-bottom: 6px; color: #a0aec0; font-size: 0.85rem; letter-spacing: 1px; }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            border-radius: 6px;
+            outline: none;
+            transition: all 0.3s;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: #c4ff00;
+            background: rgba(196,255,0,0.04);
+            box-shadow: 0 0 10px rgba(196,255,0,0.1);
+        }
+
+        textarea { height: 120px; resize: vertical; }
+
+        /* Image preview grid */
+        .image-area {
+            border: 2px dashed rgba(0,243,255,0.3);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .image-area:hover { border-color: #c4ff00; background: rgba(196,255,0,0.03); }
+
+        .image-area input[type="file"] {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(0,243,255,0.3);
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: 0.3s;
+        }
+
+        .preview-item:hover img { transform: scale(1.1); }
+
+        .preview-item .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255,0,60,0.9);
+            color: #fff;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+            z-index: 5;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .preview-item .remove-btn:hover { background: #ff003c; transform: scale(1.2); }
+
+        .preview-item.uploading::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(2px);
+        }
+
+        .preview-item.uploading::before {
+            content: 'SUBIENDO...';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #c4ff00;
+            font-size: 0.6rem;
+            z-index: 2;
+            letter-spacing: 1px;
+        }
+
+        .image-placeholder { color: #a0aec0; font-size: 0.85rem; }
+        .image-placeholder i { font-size: 2rem; display: block; margin-bottom: 8px; color: rgba(0,243,255,0.4); }
+
+        /* ===== Posts Management ===== */
+        .posts-section {
+            margin-top: 30px;
+            border-top: 1px solid rgba(0,243,255,0.2);
+            padding-top: 25px;
+        }
+
+        .new-post-box {
+            background: rgba(196,255,0,0.03);
+            border: 1px dashed #c4ff00;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .new-post-flex {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .new-post-image-preview {
+            width: 120px;
+            height: 120px;
+            border: 1px solid rgba(0,243,255,0.3);
+            border-radius: 6px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .new-post-image-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .new-post-image-preview i { font-size: 2rem; color: rgba(0,243,255,0.2); }
+
+        .new-post-image-preview input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .new-post-inputs { flex-grow: 1; }
+
+        .post-item {
+            display: flex;
+            gap: 15px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .post-img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+        .post-text { flex-grow: 1; }
+        .post-text textarea { height: 60px; font-size: 0.8rem; margin: 0; }
+
+        .post-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Status bar */
+        #statusBar {
+            margin-top: 20px;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        #statusBar.success { background: rgba(196,255,0,0.1); border: 1px solid rgba(196,255,0,0.4); color: #c4ff00; }
+        #statusBar.error { background: rgba(255,0,60,0.1); border: 1px solid rgba(255,0,60,0.4); color: #ff003c; }
+        #statusBar.loading { background: rgba(0,243,255,0.1); border: 1px solid rgba(0,243,255,0.4); color: #00f3ff; }
+    </style>
+</head>
+<body>
+
+    <div id="pinScreen">
+        <div class="pin-logo">BLACK HAT <span>ONE</span></div>
+        <p class="pin-title">PANEL DE ADMINISTRACIÓN</p>
+        <div class="pin-dots">
+            <div class="pin-dot" id="dot0"></div>
+            <div class="pin-dot" id="dot1"></div>
+            <div class="pin-dot" id="dot2"></div>
+            <div class="pin-dot" id="dot3"></div>
+        </div>
+        <div class="pin-grid">
+            <button class="pin-btn" onclick="addDigit('1')">1</button>
+            <button class="pin-btn" onclick="addDigit('2')">2</button>
+            <button class="pin-btn" onclick="addDigit('3')">3</button>
+            <button class="pin-btn" onclick="addDigit('4')">4</button>
+            <button class="pin-btn" onclick="addDigit('5')">5</button>
+            <button class="pin-btn" onclick="addDigit('6')">6</button>
+            <button class="pin-btn" onclick="addDigit('7')">7</button>
+            <button class="pin-btn" onclick="addDigit('8')">8</button>
+            <button class="pin-btn" onclick="addDigit('9')">9</button>
+            <button class="pin-btn del" onclick="addDigit('del')"><i class='bx bx-arrow-back'></i></button>
+            <button class="pin-btn" onclick="addDigit('0')">0</button>
+            <button class="pin-btn del" onclick="addDigit('clear')"><i class='bx bx-x'></i></button>
+        </div>
+        <p class="pin-error-msg" id="pinError"></p>
+    </div>
+
+    <div id="adminPanel">
+        <div class="admin-header">
+            <h1><i class='bx bx-desktop'></i> Black Hat Admin Panel</h1>
+            <div class="header-actions">
+                <button class="btn btn-outline" onclick="window.location.href='index.html'">
+                    <i class='bx bx-home-alt'></i> Ver Sitio
+                </button>
+                <button class="btn btn-primary" id="saveBtn" onclick="saveService()">
+                    <i class='bx bx-save'></i> Guardar Cambios
+                </button>
+                <button class="btn btn-danger" onclick="logout()">
+                    <i class='bx bx-log-out'></i> Salir
+                </button>
+            </div>
+        </div>
+
+        <div class="category-selector-container" style="display:flex; gap:15px; align-items:center; margin-bottom:25px; flex-wrap:wrap;">
+            <div style="flex-grow:1; min-width:200px;">
+                <label style="margin-bottom:8px; display:block;">Seleccionar Categoría:</label>
+                <select id="categorySelect" onchange="switchService(this.value)" style="width:100%; padding:12px; background:#090c13; border:1px solid rgba(0,243,255,0.4); color:#fff; border-radius:6px; font-family:'Share Tech Mono', monospace; outline:none; cursor:pointer;">
+                </select>
+            </div>
+            <div style="margin-top:22px; display:flex; gap:8px;">
+                <button class="btn btn-outline" onclick="moveCategory(-1)" title="Subir">
+                    <i class='bx bx-chevron-up'></i>
+                </button>
+                <button class="btn btn-outline" onclick="moveCategory(1)" title="Bajar">
+                    <i class='bx bx-chevron-down'></i>
+                </button>
+                <button class="btn btn-outline" onclick="addNewCategory()" style="margin-right:8px;">
+                    <i class='bx bx-plus'></i> Nueva Categoría
+                </button>
+                <button class="btn btn-danger" onclick="deleteCurrentCategory()" id="deleteCatBtn" title="Eliminar Categoría Actual">
+                    <i class='bx bx-trash'></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="editor-card" id="editorCard">
+            <p style="text-align:center; color:#888;">Cargando categorías...</p>
+        </div>
+
+        <div id="statusBar"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script>
+        const CORRECT_PIN = '1980';
+        let currentPin = '';
+
+        function addDigit(d) {
+            const error = document.getElementById('pinError');
+            error.textContent = '';
+            if (d === 'del') currentPin = currentPin.slice(0, -1);
+            else if (d === 'clear') currentPin = '';
+            else if (currentPin.length < 4) currentPin += d;
+            updateDots();
+            if (currentPin.length === 4) {
+                if (currentPin === CORRECT_PIN) {
+                    document.getElementById('pinScreen').style.display = 'none';
+                    document.getElementById('adminPanel').style.display = 'flex';
+                    fetchServices();
+                } else {
+                    document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
+                    error.textContent = 'PIN incorrecto.';
+                    setTimeout(() => {
+                        currentPin = '';
+                        updateDots();
+                        document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+                    }, 900);
+                }
+            }
+        }
+
+        function updateDots() {
+            for (let i = 0; i < 4; i++) document.getElementById(`dot${i}`).classList.toggle('filled', i < currentPin.length);
+        }
+
+        function logout() {
+            currentPin = ''; updateDots();
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('pinScreen').style.display = 'flex';
+        }
+
+        // ==================== DATA ====================
+        let services = [];
+        let currentServiceIndex = 0;
+        let selectedFiles = []; 
+        const BUCKET_NAME = 'images';
+
+        async function fetchServices() {
+            const { data, error } = await window.supabaseClient.from('services').select('*');
+            if (error) { showStatus('Error cargando datos: ' + error.message, 'error'); return; }
+            
+            let allData = data || [];
+            let configRow = allData.find(s => s.id === '__site_config__');
+            
+            if (!configRow) {
+                configRow = { 
+                    id: '__site_config__', 
+                    title: 'Configuración Global', 
+                    icon: 'bx-cog', 
+                    content: JSON.stringify({ whatsapp: '+595975634334', email: 'blackhatonemultiservicios@gmail.com', categoryOrder: [] }),
+                    images: [] 
+                };
+                allData.push(configRow);
+            }
+
+            // Aplicar orden personalizado si existe
+            try {
+                const cfg = typeof configRow.content === 'string' ? JSON.parse(configRow.content) : configRow.content;
+                if (cfg && cfg.categoryOrder && cfg.categoryOrder.length > 0) {
+                    allData.sort((a, b) => {
+                        const indexA = cfg.categoryOrder.indexOf(a.id);
+                        const indexB = cfg.categoryOrder.indexOf(b.id);
+                        if (indexA === -1 && indexB === -1) return 0;
+                        if (indexA === -1) return 1;
+                        if (indexB === -1) return -1;
+                        return indexA - indexB;
+                    });
+                }
+            } catch(e) {}
+            
+            services = allData;
+            renderSelector();
+            renderEditor(currentServiceIndex);
+        }
+
+        window.moveCategory = (dir) => {
+            const newIndex = currentServiceIndex + dir;
+            if (newIndex < 0 || newIndex >= services.length) return;
+            
+            const temp = services[currentServiceIndex];
+            services[currentServiceIndex] = services[newIndex];
+            services[newIndex] = temp;
+            
+            currentServiceIndex = newIndex;
+            renderSelector();
+            renderEditor(currentServiceIndex);
+            showStatus('Orden cambiado. No olvides "Guardar Cambios" (puedes hacerlo desde cualquier pestaña).', 'success');
+        };
+
+        window.switchService = (idx) => {
+            currentServiceIndex = parseInt(idx);
+            selectedFiles = [];
+            renderEditor(currentServiceIndex);
+        };
+
+        function renderSelector() {
+            const select = document.getElementById('categorySelect');
+            select.innerHTML = '';
+            services.forEach((s, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = (s.id === '__site_config__' ? '⚙ ' : '') + s.title;
+                if (i === currentServiceIndex) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        async function addNewCategory() {
+            const title = prompt('Nombre de la nueva categoría:');
+            if (!title) return;
+            // Generar ID seguro
+            const id = title.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quitar acentos
+                .replace(/ /g, '-')
+                .replace(/[^\w-]/g, '');
+            
+            if (services.find(s => s.id === id)) { alert('Esa categoría ya existe.'); return; }
+            
+            const newService = {
+                id: id,
+                title: title,
+                icon: 'bx-cube',
+                content: 'Nuevo contenido...',
+                images: []
+            };
+            
+            services.push(newService);
+            currentServiceIndex = services.length - 1;
+            renderSelector();
+            renderEditor(currentServiceIndex);
+            showStatus('Nueva categoría añadida. ¡No olvides Guardar Cambios para persistir el orden!', 'success');
+        }
+
+        function getDefaults() {
+            return [
+                { id: 'redes-sociales', title: 'Gestión de Redes', icon: 'bx-share-alt', content: '', images: [] },
+                { id: 'mantenimiento-pc', title: 'Mantenimiento PC', icon: 'bx-wrench', content: '', images: [] },
+                { id: 'diseno-web', title: 'Diseño Web', icon: 'bx-code-alt', content: '', images: [] },
+                { id: 'camaras-cctv', title: 'Cámaras CCTV', icon: 'bx-cctv', content: '', images: [] },
+                { id: 'contacto', title: 'Contacto Directo', icon: 'bx-envelope', content: '', images: [] },
+            ];
+        }
+
+        function renderTabs() {
+            const tabs = document.getElementById('categoryTabs');
+            tabs.innerHTML = '';
+            services.forEach((s, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'tab-btn' + (i === currentServiceIndex ? ' active' : '');
+                btn.innerHTML = `<i class='bx ${s.icon}'></i> ${s.title}`;
+                btn.onclick = () => { currentServiceIndex = i; selectedFiles = []; renderTabs(); renderEditor(i); };
+                tabs.appendChild(btn);
+            });
+        }
+
+        function renderEditor(index) {
+            console.log("Renderizando editor para índice:", index);
+            const s = services[index];
+            const card = document.getElementById('editorCard');
+
+            renderSelector(); // Sincronizar selector por si acaso
+
+            // Caso especial: Configuración Global
+            if (s.id === '__site_config__') {
+                let config = { whatsapp: '', email: '' };
+                try { config = typeof s.content === 'string' ? JSON.parse(s.content) : s.content || config; } catch(e) {}
+                
+                card.innerHTML = `
+                    <h2><i class='bx bx-cog'></i> <strong style="color:#c4ff00">Configuración Global</strong></h2>
+                    <p style="margin-bottom:20px; color:#a0aec0; font-size:0.85rem;">Aquí puedes cambiar el contacto que se muestra en todo el sitio.</p>
+                    <div class="field-group">
+                        <label>Número de WhatsApp (Ej: +595981...)</label>
+                        <input type="text" id="configWa" value="${config.whatsapp || ''}" placeholder="+595...">
+                    </div>
+                    <div class="field-group">
+                        <label>Correo Electrónico de Contacto</label>
+                        <input type="text" id="configEmail" value="${config.email || ''}" placeholder="ejemplo@gmail.com">
+                    </div>
+                    <div class="field-group">
+                        <label>Enlace de Instagram (URL completa)</label>
+                        <input type="text" id="configIg" value="${config.instagram || ''}" placeholder="https://instagram.com/...">
+                    </div>
+                    <div class="field-group">
+                        <label>Enlace de Facebook (URL completa)</label>
+                        <input type="text" id="configFb" value="${config.facebook || ''}" placeholder="https://facebook.com/...">
+                    </div>
+                `;
+                return;
+            }
+
+            // Intentar parsear si es un string (JSON de Supabase)
+            if (typeof s.images === 'string') {
+                try { s.images = JSON.parse(s.images); } catch(e) { console.error("Error parseando images:", e); }
+            }
+
+            // Asegurarse de que images sea un array de objetos {url, description}
+            if (!s.images || !Array.isArray(s.images)) {
+                console.log("Iniciando array de imágenes vacío o desde legacy");
+                if (s.image) s.images = [{ url: s.image, description: '' }];
+                else s.images = [];
+            } else {
+                // Migrar si fuera array de strings (seguridad extra)
+                s.images = s.images.map(img => typeof img === 'string' ? { url: img, description: '' } : img);
+            }
+
+            console.log("Posts actuales detectados:", s.images.length);
+
+            card.innerHTML = `
+                <h2><i class='bx ${s.icon}'></i> <strong style="color:#c4ff00">${s.title}</strong></h2>
+                <div class="field-group"><label>Título</label><input type="text" id="fieldTitle" value="${s.title || ''}"></div>
+                <div class="field-group"><label>Ícono</label><input type="text" id="fieldIcon" value="${s.icon || ''}"></div>
+                <div class="field-group"><label>Descripción General</label><textarea id="fieldContent">${s.content || ''}</textarea></div>
+                
+                <div class="posts-section">
+                    <h3 style="color:#00f3ff; margin-bottom:15px; font-size:1rem; display:flex; justify-content:space-between;">
+                        <span>Gestionar Publicaciones (Ejemplos)</span>
+                        <span id="postCountBadge" style="background:#c4ff00; color:#000; padding:2px 8px; border-radius:10px; font-size:0.75rem;">${s.images.length} posts</span>
+                    </h3>
+                    
+                    <div class="new-post-box">
+                        <label>Añadir Nueva Publicación</label>
+                        <div class="new-post-flex">
+                            <div class="new-post-image-preview" id="newPostPreview" style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; align-items: center; overflow-y: auto;">
+                                <i class='bx bx-camera'></i>
+                                <input type="file" id="newPostFile" accept="image/*" multiple onchange="previewNewPost(this)">
+                            </div>
+                            <div class="new-post-inputs">
+                                <textarea id="newPostText" placeholder="Descripción de este trabajo..."></textarea>
+                                <button class="btn btn-primary" style="width:100%;" onclick="addNewPost()">
+                                    <i class='bx bx-plus'></i> Añadir Publicación
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="postsList"></div>
+                </div>
+            `;
+            // Esperar un tick para asegurar que el DOM se actualizó
+            setTimeout(updatePostsList, 0);
+        }
+
+        window.previewNewPost = function(input) {
+            const preview = document.getElementById('newPostPreview');
+            if (input.files && input.files.length > 0) {
+                selectedFiles = Array.from(input.files);
+                preview.innerHTML = '';
+                
+                selectedFiles.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.width = '45%';
+                        img.style.aspectRatio = '1';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '4px';
+                        preview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                
+                // Re-agregar el input invisible para que siga funcionando
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.id = 'newPostFile';
+                fileInput.multiple = true;
+                fileInput.accept = 'image/*';
+                fileInput.onchange = function() { previewNewPost(this); };
+                fileInput.style.position = 'absolute';
+                fileInput.style.inset = '0';
+                fileInput.style.opacity = '0';
+                fileInput.style.cursor = 'pointer';
+                preview.appendChild(fileInput);
+            }
+        };
+
+        async function addNewPost() {
+            if (selectedFiles.length === 0) { alert('Selecciona al menos una imagen'); return; }
+            const description = document.getElementById('newPostText').value.trim();
+            const s = services[currentServiceIndex];
+            
+            showStatus(`Subiendo ${selectedFiles.length} imagen(es)...`, 'loading');
+            
+            const uploadedUrls = [];
+            
+            for (const file of selectedFiles) {
+                const ext = file.name.split('.').pop();
+                const fileName = `${s.id}-${Date.now()}-${Math.floor(Math.random()*1000)}.${ext}`;
+                const { error: uploadError } = await window.supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file);
+                
+                if (!uploadError) {
+                    const { data: urlData } = window.supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+                    uploadedUrls.push(urlData.publicUrl);
+                } else {
+                    console.error('Error al subir una imagen:', uploadError);
+                }
+            }
+
+            if (uploadedUrls.length > 0) {
+                s.images.unshift({ urls: uploadedUrls, description: description });
+                selectedFiles = [];
+                renderEditor(currentServiceIndex);
+                showStatus('Publicación añadida correctamente. No olvides "Guardar Cambios".', 'success');
+            } else {
+                showStatus('Error al subir las imágenes.', 'error');
+            }
+        }
+        function updatePostsList() {
+            const list = document.getElementById('postsList');
+            if (!list) return;
+            list.innerHTML = '';
+            const s = services[currentServiceIndex];
+
+            s.images.forEach((post, postIdx) => {
+                const urls = post.urls || (post.url ? [post.url] : []);
+                
+                const div = document.createElement('div');
+                div.className = 'post-item';
+                div.style.flexDirection = 'column';
+                div.style.alignItems = 'stretch';
+                
+                let imagesHTML = urls.map((url, imgIdx) => `
+                    <div style="position:relative; width:60px; height:60px; border-radius:4px; overflow:hidden; border:1px solid rgba(0,243,255,0.2);">
+                        <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
+                        <button onclick="removeImageFromPost(${postIdx}, ${imgIdx})" style="position:absolute; top:0; right:0; background:rgba(255,0,60,0.8); color:#fff; border:none; width:18px; height:18px; font-size:12px; cursor:pointer;" title="Quitar imagen">×</button>
+                    </div>
+                `).join('');
+
+                div.innerHTML = `
+                    <div style="display:flex; gap:15px; align-items:flex-start;">
+                        <div style="display:flex; flex-wrap:wrap; gap:5px; width:130px; flex-shrink:0; background:rgba(0,0,0,0.2); padding:5px; border-radius:6px; min-height:70px;">
+                            ${imagesHTML}
+                            <button class="btn btn-outline" onclick="triggerAddImages(${postIdx})" style="width:100%; height:30px; font-size:12px; padding:0;" title="Añadir más fotos">
+                                <i class='bx bx-image-add'></i> +
+                            </button>
+                        </div>
+                        <div class="post-text">
+                            <textarea onchange="updatePostDesc(${postIdx}, this.value)" placeholder="Sin descripción..." style="height:70px;">${post.description}</textarea>
+                        </div>
+                        <div class="post-actions" style="margin-top:5px;">
+                            <button class="btn btn-outline" onclick="movePost(${postIdx}, -1)" title="Subir" style="padding: 5px 10px;">
+                                <i class='bx bx-chevron-up'></i>
+                            </button>
+                            <button class="btn btn-outline" onclick="movePost(${postIdx}, 1)" title="Bajar" style="padding: 5px 10px;">
+                                <i class='bx bx-chevron-down'></i>
+                            </button>
+                            <button class="btn btn-danger" onclick="removePost(${postIdx})" title="Eliminar Post Completo" style="padding: 5px 10px;">
+                                <i class='bx bx-trash'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Input oculto para añadir fotos a este post específico -->
+                    <input type="file" id="fileInput-${postIdx}" style="display:none;" accept="image/*" multiple onchange="addMoreImagesToPost(${postIdx}, this)">
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        window.updatePostDesc = (i, val) => { services[currentServiceIndex].images[i].description = val; };
+        window.removePost = (i) => { if(confirm('¿Eliminar esta publicación completa?')) { services[currentServiceIndex].images.splice(i, 1); updatePostsList(); } };
+        window.removeImageFromPost = (postIdx, imgIdx) => {
+            const post = services[currentServiceIndex].images[postIdx];
+            if (post.urls) {
+                post.urls.splice(imgIdx, 1);
+                if (post.urls.length === 0) services[currentServiceIndex].images.splice(postIdx, 1);
+            } else if (post.url) {
+                services[currentServiceIndex].images.splice(postIdx, 1);
+            }
+            updatePostsList();
+            showStatus('Imagen quitada. No olvides Guardar Cambios.', 'success');
+        };
+
+        window.triggerAddImages = (idx) => { document.getElementById(`fileInput-${idx}`).click(); };
+
+        window.addMoreImagesToPost = async (postIdx, input) => {
+            if (!input.files || input.files.length === 0) return;
+            const files = Array.from(input.files);
+            const s = services[currentServiceIndex];
+            const post = s.images[postIdx];
+            
+            showStatus(`Añadiendo ${files.length} imagen(es)...`, 'loading');
+            
+            // Asegurarse de tener formato array
+            if (!post.urls) {
+                post.urls = post.url ? [post.url] : [];
+                delete post.url;
+            }
+
+            for (const file of files) {
+                const ext = file.name.split('.').pop();
+                const fileName = `${s.id}-${Date.now()}-${Math.floor(Math.random()*1000)}.${ext}`;
+                const { error: uploadError } = await window.supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file);
+                
+                if (!uploadError) {
+                    const { data: urlData } = window.supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+                    post.urls.push(urlData.publicUrl);
+                }
+            }
+            
+            updatePostsList();
+            showStatus('Imágenes añadidas. ¡Recuerda Guardar Cambios!', 'success');
+        };
+        window.movePost = (i, dir) => {
+            const images = services[currentServiceIndex].images;
+            const newIdx = i + dir;
+            if (newIdx < 0 || newIdx >= images.length) return;
+            // Intercambiar elementos
+            const temp = images[i];
+            images[i] = images[newIdx];
+            images[newIdx] = temp;
+            updatePostsList();
+        };
+
+        async function deleteCurrentCategory() {
+            const s = services[currentServiceIndex];
+            if (!s || s.id === '__site_config__') {
+                alert('No se puede eliminar la configuración global.');
+                return;
+            }
+
+            if (!confirm(`¿Estás seguro de que quieres eliminar la categoría "${s.title}"?\nEsta acción no se puede deshacer y borrará todos sus posts y configuraciones.`)) {
+                return;
+            }
+            
+            if (!confirm(`CONFIRMACIÓN FINAL: ¿Borrar definitivamente "${s.title}"?`)) {
+                return;
+            }
+
+            showStatus('Eliminando categoría de la base de datos...', 'loading');
+            
+            try {
+                // 1. Borrar de Supabase
+                const { error } = await window.supabaseClient.from('services').delete().eq('id', s.id);
+                
+                if (error) {
+                    showStatus('Error al eliminar: ' + error.message, 'error');
+                    return;
+                }
+
+                // 2. Eliminar del array local
+                services.splice(currentServiceIndex, 1);
+                
+                // 3. Actualizar la configuración global (categoryOrder)
+                const configRow = services.find(srv => srv.id === '__site_config__');
+                if (configRow) {
+                    let cfg = {};
+                    try { cfg = typeof configRow.content === 'string' ? JSON.parse(configRow.content) : configRow.content || {}; } catch(e) {}
+                    cfg.categoryOrder = services.map(srv => srv.id);
+                    configRow.content = JSON.stringify(cfg);
+                    // Guardar la config actualizada inmediatamente para persistir el nuevo orden
+                    await window.supabaseClient.from('services').upsert([configRow]);
+                }
+
+                // 4. Resetear vista
+                currentServiceIndex = 0; 
+                renderSelector();
+                renderEditor(currentServiceIndex);
+                showStatus('✔ Categoría eliminada con éxito.', 'success');
+                
+            } catch (err) {
+                console.error("Error al eliminar categoría:", err);
+                showStatus('Error inesperado: ' + err.message, 'error');
+            }
+        }
+
+        async function saveService() {
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true; btn.innerHTML = "Guardando...";
+            showStatus('Sincronizando con base de datos...', 'loading');
+
+            const s = services[currentServiceIndex];
+            
+            // Sincronizar el orden de las categorías en la configuración global antes de cualquier guardado
+            const configRow = services.find(srv => srv.id === '__site_config__');
+            if (configRow) {
+                let cfg = {};
+                try { cfg = typeof configRow.content === 'string' ? JSON.parse(configRow.content) : configRow.content || {}; } catch(e) {}
+                cfg.categoryOrder = services.map(srv => srv.id);
+                configRow.content = JSON.stringify(cfg);
+            }
+
+            if (s.id === '__site_config__') {
+                const wa = document.getElementById('configWa').value.trim();
+                const email = document.getElementById('configEmail').value.trim();
+                const ig = document.getElementById('configIg').value.trim();
+                const fb = document.getElementById('configFb').value.trim();
+                let cfg = JSON.parse(s.content);
+                cfg.whatsapp = wa;
+                cfg.email = email;
+                cfg.instagram = ig;
+                cfg.facebook = fb;
+                s.content = JSON.stringify(cfg);
+            } else {
+                s.title = document.getElementById('fieldTitle').value.trim();
+                s.icon = document.getElementById('fieldIcon').value.trim();
+                s.content = document.getElementById('fieldContent').value.trim();
+                
+                // LIMPIEZA DE DATOS: Asegurar que el array de imágenes esté limpio
+                if (Array.isArray(s.images)) {
+                    s.images = s.images.map(post => {
+                        const clean = { description: post.description || '' };
+                        if (post.urls && post.urls.length > 0) {
+                            clean.urls = post.urls;
+                        } else if (post.url) {
+                            clean.url = post.url;
+                        }
+                        return clean;
+                    });
+                }
+            }
+
+            // PREPARAR LOTE: Guardar el servicio actual Y la configuración (orden/contactos)
+            const rowsToSave = [s];
+            if (configRow && configRow.id !== s.id) {
+                rowsToSave.push(configRow);
+            }
+
+            console.log("INTENTANDO GUARDAR LOTE:", rowsToSave);
+
+            try {
+                const { data, error } = await window.supabaseClient.from('services').upsert(rowsToSave).select();
+                
+                if (error) {
+                    console.error("ERROR DE SUPABASE AL GUARDAR:", error);
+                    showStatus('Error de base de datos: ' + error.message, 'error');
+                } else {
+                    console.log("RESPUESTA EXITOSA DE SUPABASE:", data);
+                    showStatus('✔ ¡Todo guardado y sincronizado correctamente!', 'success');
+                    renderSelector();
+                    renderEditor(currentServiceIndex);
+                }
+            } catch (err) {
+                console.error("ERROR INESPERADO AL GUARDAR:", err);
+                showStatus('Error inesperado: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false; 
+                btn.innerHTML = "<i class='bx bx-save'></i> Guardar Cambios";
+            }
+        }
+
+        function showStatus(msg, type) {
+            const bar = document.getElementById('statusBar');
+            bar.className = type; bar.style.display = 'block'; bar.innerHTML = msg;
+            if (type === 'success') setTimeout(() => bar.style.display = 'none', 3000);
+        }
+    </script>
+</body>
+</html>

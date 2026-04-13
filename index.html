@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black Hat One</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Boxicons para los íconos del menú -->
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Efecto de red/matrix de fondo -->
+    <div class="cyber-grid grid-squares"></div>
+    <canvas id="hexCanvas" class="cyber-grid"></canvas>
+    <div class="bg-title">
+        <span class="bg-white">BLACK HAT</span> <span class="bg-neon">ONE</span>
+    </div>
+
+    <!-- Dashboard superior: Redes (Izquierda) y Contador (Derecha) -->
+    <div class="top-left-social" id="socialLinks">
+        <!-- Cargado dinámicamente -->
+    </div>
+
+    <div class="top-right-counter" id="visitorCounter">
+        <div class="visitor-counter">
+            <span class="label">VISITORS:</span>
+            <span class="count" id="countVal">000000</span>
+        </div>
+    </div>
+
+    <div class="menu-container" id="menuContainer">
+        <!-- Elementos del menú (Generados dinámicamente) -->
+        
+        <!-- Botón Central (Toggle) -->
+        <div class="menu-toggle" id="toggleButton">
+            <div class="toggle-content">
+                <img src="logo.png" alt="Black Hat One Logo">
+                <span class="brand-name">
+                    <span class="text-white">black hat</span> <span class="text-neon">one</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para contenido dinámico -->
+    <div id="infoModal" class="modal-overlay" style="display:none;">
+        <div id="modalContent" class="modal-content cyber-card">
+            <span class="close-btn" id="closeModal">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <div id="carouselContainer" style="display:none; margin-bottom:15px;"></div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Contact Footer -->
+    <div class="contact-footer">
+        <a id="contactWa" href="https://wa.me/595975634334" target="_blank" class="contact-icon wa" title="WhatsApp: +595975634334">
+            <i class='bx bxl-whatsapp'></i>
+        </a>
+        <a id="contactEmail" href="mailto:blackhatonemultiservicios@gmail.com" class="contact-icon email" title="Correo: blackhatonemultiservicios@gmail.com">
+            <i class='bx bx-mail-send'></i>
+        </a>
+    </div>
+
+    <div class="footer-copyright">
+        © 2026 Black Hat One. Todos los derechos reservados.
+    </div>
+
+    <!-- Botón de Administración -->
+    <a href="admin.html" class="admin-link" title="Panel de Administración">
+        <i class='bx bx-cog'></i>
+    </a>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

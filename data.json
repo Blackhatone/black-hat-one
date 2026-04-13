@@ -1,0 +1,39 @@
+{
+    "services": [
+        {
+            "id": "redes-sociales",
+            "title": "Gestión de Redes",
+            "icon": "bx-share-alt",
+            "content": "Hola",
+            "image": ""
+        },
+        {
+            "id": "mantenimiento-pc",
+            "title": "Mantenimiento PC",
+            "icon": "bx-wrench",
+            "content": "Contenido aquí",
+            "image": ""
+        },
+        {
+            "id": "diseno-web",
+            "title": "Diseño Web",
+            "icon": "bx-code-alt",
+            "content": "Contenido aquí",
+            "image": ""
+        },
+        {
+            "id": "camaras-cctv",
+            "title": "Cámaras CCTV",
+            "icon": "bx-cctv",
+            "content": "Contenido aquí",
+            "image": ""
+        },
+        {
+            "id": "contacto",
+            "title": "Contacto Directo",
+            "icon": "bx-envelope",
+            "content": "Contenido aquí",
+            "image": ""
+        }
+    ]
+}
