@@ -1,0 +1,27 @@
+{
+  "name": "black-hat-one",
+  "version": "1.0.0",
+  "description": "Black Hat One - Cybersecurity themed website with Vercel Speed Insights",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Blackhatone/black-hat-one.git"
+  },
+  "keywords": [
+    "vercel",
+    "speed-insights",
+    "performance"
+  ],
+  "author": "Black Hat One",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Blackhatone/black-hat-one/issues"
+  },
+  "homepage": "https://github.com/Blackhatone/black-hat-one#readme",
+  "dependencies": {
+    "@vercel/speed-insights": "^2.0.0"
+  }
+}
