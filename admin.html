@@ -503,29 +503,38 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script>
-        const CORRECT_PIN = '1980';
         let currentPin = '';
 
-        function addDigit(d) {
+        async function addDigit(d) {
             const error = document.getElementById('pinError');
             error.textContent = '';
             if (d === 'del') currentPin = currentPin.slice(0, -1);
             else if (d === 'clear') currentPin = '';
             else if (currentPin.length < 4) currentPin += d;
+            
             updateDots();
+            
             if (currentPin.length === 4) {
-                if (currentPin === CORRECT_PIN) {
-                    document.getElementById('pinScreen').style.display = 'none';
-                    document.getElementById('adminPanel').style.display = 'flex';
-                    fetchServices();
-                } else {
+                error.textContent = 'Verificando conexión segura...';
+                const { data, error: supaError } = await window.supabaseClient.auth.signInWithPassword({
+                    email: 'admin@blackhatone.com',
+                    password: 'Seguridad' + currentPin
+                });
+
+                if (supaError) {
                     document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
                     error.textContent = 'PIN incorrecto.';
                     setTimeout(() => {
                         currentPin = '';
                         updateDots();
                         document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+                        error.textContent = '';
                     }, 900);
+                } else {
+                    error.textContent = '';
+                    document.getElementById('pinScreen').style.display = 'none';
+                    document.getElementById('adminPanel').style.display = 'flex';
+                    fetchServices();
                 }
             }
         }
@@ -534,11 +543,22 @@
             for (let i = 0; i < 4; i++) document.getElementById(`dot${i}`).classList.toggle('filled', i < currentPin.length);
         }
 
-        function logout() {
+        async function logout() {
+            await window.supabaseClient.auth.signOut();
             currentPin = ''; updateDots();
             document.getElementById('adminPanel').style.display = 'none';
             document.getElementById('pinScreen').style.display = 'flex';
         }
+
+        // Auto-login si la sesión segura sigue activa
+        window.onload = async () => {
+            const { data } = await window.supabaseClient.auth.getSession();
+            if (data && data.session) {
+                document.getElementById('pinScreen').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'flex';
+                fetchServices();
+            }
+        };
 
         // ==================== DATA ====================
         let services = [];
