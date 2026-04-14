@@ -10,7 +10,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modalBody        = document.getElementById('modalBody');
 
     let servicesData = {};
-    let siteConfig = { whatsapp: '+595975634334', email: 'blackhatonemultiservicios@gmail.com' };
+    let siteConfig = { whatsapp: '+595975634334', email: 'blackhatonemultiservicios@gmail.com', promos: [] };
+    let promosData = [];
+    let promosShownOnLoad = false;
 
     function updateGlobalUI() {
         const waLink = document.getElementById('contactWa');
@@ -232,6 +234,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const parsed = typeof configRow.content === 'string' ? JSON.parse(configRow.content) : configRow.content;
                 if (parsed) siteConfig = parsed;
                 updateGlobalUI();
+                // Cargar promos
+                promosData = siteConfig.promos || [];
+                if (!promosShownOnLoad && promosData.some(p => p.active)) {
+                    promosShownOnLoad = true;
+                    setTimeout(() => showIntroPromos(), 1500);
+                }
             } catch(e) { console.error("Error al aplicar configuración:", e); }
         }
 
@@ -304,10 +312,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         modalTitle.textContent = serviceInfo.title;
         const cleanPhone = siteConfig.whatsapp.replace(/\+/g, '');
         
-        modalBody.innerHTML    = (serviceInfo.content || '<p>Contenido no disponible.</p>') + 
-            `<a href="https://wa.me/${cleanPhone}" target="_blank" class="cta-whatsapp" title="Solicitar Presupuesto por WhatsApp">
-                <i class='bx bxl-whatsapp'></i>
-            </a>`;
+        // Verificar si hay promos activas para mostrar el botón
+        const hasActivePromos = promosData.some(p => p.active);
+        const promoBtnHTML = hasActivePromos ? 
+            `<button class="cta-promos-btn" onclick="window._openPromosFromModal()" title="Ver Promociones Disponibles">
+                <i class='bx bx-purchase-tag-alt'></i> Consulte Promociones
+            </button>` : '';
+        
+        modalBody.innerHTML = (serviceInfo.content || '<p>Contenido no disponible.</p>') + 
+            `<div class="modal-actions-row">
+                ${promoBtnHTML}
+                <a href="https://wa.me/${cleanPhone}" target="_blank" class="cta-whatsapp" title="Solicitar Presupuesto por WhatsApp">
+                    <i class='bx bxl-whatsapp'></i>
+                </a>
+            </div>`;
 
         // Armar array de imágenes
         let serviceImages = serviceInfo.images;
@@ -339,6 +357,94 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('click', (e) => {
         if (e.target === infoModal) infoModal.style.display = 'none';
     });
+
+    // ==================== Sistema de Promociones Flotantes ====================
+    const promosOverlay = document.getElementById('promosOverlay');
+    const promosCloseBtn = document.getElementById('promosCloseBtn');
+
+    function renderPromoCards(promos) {
+        const activePromos = promos.filter(p => p.active);
+        if (activePromos.length === 0) {
+            promosOverlay.innerHTML = '';
+            return;
+        }
+
+        const cleanPhone = siteConfig.whatsapp.replace(/\+/g, '');
+
+        promosOverlay.innerHTML = activePromos.map(promo => `
+            <div class="promo-card">
+                <span class="promo-badge">PROMO</span>
+                <div class="promo-card-image">
+                    ${promo.image 
+                        ? `<img src="${promo.image}" alt="${promo.title || 'Promoción'}">`
+                        : `<div class="promo-placeholder"><i class='bx bx-purchase-tag-alt'></i></div>`
+                    }
+                </div>
+                <div class="promo-card-body">
+                    ${promo.title ? `<div class="promo-card-title">${promo.title}</div>` : ''}
+                    ${promo.description ? `<div class="promo-card-desc">${promo.description}</div>` : ''}
+                    ${promo.price ? `<div class="promo-card-price">${promo.price}</div>` : ''}
+                    <a href="https://wa.me/${cleanPhone}?text=${encodeURIComponent('Hola! Me interesa la promo: ' + (promo.title || 'Promoción'))}" target="_blank" class="promo-wa-btn">
+                        <i class='bx bxl-whatsapp'></i> Consultar
+                    </a>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Animación inicial al cargar la página (se muestran 5 segundos y desaparecen)
+    function showIntroPromos() {
+        renderPromoCards(promosData);
+        const cards = promosOverlay.querySelectorAll('.promo-card');
+        if (cards.length === 0) return;
+
+        // Entrada
+        cards.forEach(c => c.classList.add('intro-enter'));
+
+        // Salida después de 5 segundos
+        setTimeout(() => {
+            cards.forEach(c => {
+                c.classList.remove('intro-enter');
+                c.classList.add('intro-exit');
+            });
+            // Limpiar después de la animación de salida
+            setTimeout(() => {
+                promosOverlay.innerHTML = '';
+                promosOverlay.classList.remove('active');
+            }, 800);
+        }, 5000);
+    }
+
+    // Abrir promos desde el botón del modal de servicio
+    window._openPromosFromModal = function() {
+        // Cerrar el modal de servicio
+        infoModal.style.display = 'none';
+        
+        // Renderizar y mostrar promos
+        renderPromoCards(promosData);
+        promosOverlay.classList.add('active', 'with-backdrop');
+        promosCloseBtn.classList.add('visible');
+        
+        // Animar entrada
+        setTimeout(() => {
+            promosOverlay.querySelectorAll('.promo-card').forEach(c => c.classList.add('visible'));
+        }, 50);
+    };
+
+    // Cerrar promos (botón X)
+    promosCloseBtn.addEventListener('click', closePromos);
+    promosOverlay.addEventListener('click', (e) => {
+        if (e.target === promosOverlay) closePromos();
+    });
+
+    function closePromos() {
+        promosOverlay.querySelectorAll('.promo-card').forEach(c => c.classList.remove('visible'));
+        setTimeout(() => {
+            promosOverlay.classList.remove('active', 'with-backdrop');
+            promosCloseBtn.classList.remove('visible');
+            promosOverlay.innerHTML = '';
+        }, 500);
+    }
 
     // ==================== Fondo de Hexágonos (Canvas) ====================
     const canvas = document.getElementById('hexCanvas');

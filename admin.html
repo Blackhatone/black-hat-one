@@ -715,6 +715,55 @@
                         <label>Enlace de Facebook (URL completa)</label>
                         <input type="text" id="configFb" value="${config.facebook || ''}" placeholder="https://facebook.com/...">
                     </div>
+
+                    <div style="border-top:2px solid rgba(196,255,0,0.3); margin-top:30px; padding-top:25px;">
+                        <h3 style="color:#c4ff00; margin-bottom:5px; font-size:1rem; display:flex; align-items:center; gap:8px;">
+                            <i class='bx bx-purchase-tag-alt'></i> Promociones Flotantes (3 espacios)
+                        </h3>
+                        <p style="color:#a0aec0; font-size:0.78rem; margin-bottom:20px;">Estas aparecen al cargar la página y dentro de cada servicio con el botón "Consulte Promociones".</p>
+                        
+                        ${[0, 1, 2].map(i => {
+                            const promo = (config.promos && config.promos[i]) || { title: '', description: '', price: '', image: '', active: false };
+                            return `
+                            <div style="background:rgba(0,243,255,0.03); border:1px solid rgba(0,243,255,0.15); border-radius:10px; padding:20px; margin-bottom:15px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                    <label style="margin:0; color:#00f3ff; font-size:0.9rem;">Promoción ${i + 1}</label>
+                                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
+                                        <span style="font-size:0.75rem; color:${promo.active ? '#c4ff00' : '#666'};">${promo.active ? 'ACTIVA' : 'INACTIVA'}</span>
+                                        <input type="checkbox" id="promoActive${i}" ${promo.active ? 'checked' : ''}
+                                            onchange="document.querySelector('#promoStatus${i}').textContent = this.checked ? 'ACTIVA' : 'INACTIVA'; document.querySelector('#promoStatus${i}').style.color = this.checked ? '#c4ff00' : '#666';"
+                                            style="width:18px; height:18px; accent-color:#c4ff00; cursor:pointer;">
+                                        <span id="promoStatus${i}" style="display:none;"></span>
+                                    </label>
+                                </div>
+                                <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                                    <div style="width:120px; height:120px; border:1px dashed rgba(196,255,0,0.3); border-radius:8px; overflow:hidden; position:relative; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:#000;" id="promoImgPreview${i}">
+                                        ${promo.image 
+                                            ? `<img src="${promo.image}" style="width:100%; height:100%; object-fit:cover;">`
+                                            : `<i class='bx bx-image-add' style="font-size:2rem; color:rgba(0,243,255,0.3);"></i>`
+                                        }
+                                        <input type="file" accept="image/*" onchange="uploadPromoImage(${i}, this)"
+                                            style="position:absolute; inset:0; opacity:0; cursor:pointer;">
+                                    </div>
+                                    <div style="flex:1; min-width:200px;">
+                                        <div class="field-group" style="margin-bottom:10px;">
+                                            <label style="font-size:0.75rem;">Título</label>
+                                            <input type="text" id="promoTitle${i}" value="${promo.title || ''}" placeholder="Ej: Pack Redes Sociales">
+                                        </div>
+                                        <div class="field-group" style="margin-bottom:10px;">
+                                            <label style="font-size:0.75rem;">Descripción</label>
+                                            <textarea id="promoDesc${i}" style="height:50px;" placeholder="Breve descripción de la promo...">${promo.description || ''}</textarea>
+                                        </div>
+                                        <div class="field-group" style="margin-bottom:0;">
+                                            <label style="font-size:0.75rem;">Precio / Etiqueta</label>
+                                            <input type="text" id="promoPrice${i}" value="${promo.price || ''}" placeholder="Ej: Gs. 500.000 o -30% OFF">
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="promoImageUrl${i}" value="${promo.image || ''}">
+                            </div>`;
+                        }).join('')}
+                    </div>
                 `;
                 return;
             }
@@ -1021,6 +1070,16 @@
                 cfg.email = email;
                 cfg.instagram = ig;
                 cfg.facebook = fb;
+                
+                // Guardar promociones
+                cfg.promos = [0, 1, 2].map(i => ({
+                    title: document.getElementById(`promoTitle${i}`).value.trim(),
+                    description: document.getElementById(`promoDesc${i}`).value.trim(),
+                    price: document.getElementById(`promoPrice${i}`).value.trim(),
+                    image: document.getElementById(`promoImageUrl${i}`).value.trim(),
+                    active: document.getElementById(`promoActive${i}`).checked
+                }));
+                
                 s.content = JSON.stringify(cfg);
             } else {
                 s.title = document.getElementById('fieldTitle').value.trim();
@@ -1075,6 +1134,35 @@
             bar.className = type; bar.style.display = 'block'; bar.innerHTML = msg;
             if (type === 'success') setTimeout(() => bar.style.display = 'none', 3000);
         }
+
+        // ===== Upload de imágenes de promo =====
+        window.uploadPromoImage = async function(index, input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            const ext = file.name.split('.').pop();
+            const fileName = `promo-${index}-${Date.now()}.${ext}`;
+            
+            showStatus(`Subiendo imagen de promo ${index + 1}...`, 'loading');
+            
+            const { error: uploadError } = await window.supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file);
+            
+            if (!uploadError) {
+                const { data: urlData } = window.supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+                const url = urlData.publicUrl;
+                
+                // Actualizar hidden input y preview
+                document.getElementById(`promoImageUrl${index}`).value = url;
+                const preview = document.getElementById(`promoImgPreview${index}`);
+                preview.innerHTML = `
+                    <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
+                    <input type="file" accept="image/*" onchange="uploadPromoImage(${index}, this)"
+                        style="position:absolute; inset:0; opacity:0; cursor:pointer;">
+                `;
+                showStatus(`✔ Imagen de promo ${index + 1} subida. No olvides Guardar Cambios.`, 'success');
+            } else {
+                showStatus('Error al subir imagen: ' + uploadError.message, 'error');
+            }
+        };
     </script>
 </body>
 </html>
