@@ -1,6 +1,40 @@
 {
     "services": [
         {
+            "id": "__site_config__",
+            "title": "Configuración Global",
+            "icon": "bx-cog",
+            "content": {
+                "whatsapp": "+595975634334",
+                "email": "blackhatonemultiservicios@gmail.com",
+                "instagram": "https://www.instagram.com/reel/DEv3_3pRAuP/?igsh=dHdkcXh4YnQ4dWs0",
+                "facebook": "https://facebook.com/...",
+                "promos": [
+                    {
+                        "title": "🔥 ¡Tu negocio merece una web hecha 100% a su medida! 🚀💻",
+                        "description": "Impulsa tu marca con un sitio web moderno, rápido y optimizado para ventas por WhatsApp.",
+                        "price": "OFERTA ESPECIAL",
+                        "image": "logo2.png",
+                        "active": true
+                    },
+                    {
+                        "title": "",
+                        "description": "",
+                        "price": "",
+                        "image": "",
+                        "active": false
+                    },
+                    {
+                        "title": "",
+                        "description": "",
+                        "price": "",
+                        "image": "",
+                        "active": false
+                    }
+                ]
+            }
+        },
+        {
             "id": "redes-sociales",
             "title": "Gestión de Redes",
             "icon": "bx-share-alt",

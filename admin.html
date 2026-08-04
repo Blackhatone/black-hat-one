@@ -774,11 +774,10 @@
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                                     <label style="margin:0; color:#00f3ff; font-size:0.9rem;">Promoción ${i + 1}</label>
                                     <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
-                                        <span style="font-size:0.75rem; color:${promo.active ? '#c4ff00' : '#666'};">${promo.active ? 'ACTIVA' : 'INACTIVA'}</span>
+                                        <span id="promoStatusLabel${i}" style="font-size:0.75rem; color:${promo.active ? '#c4ff00' : '#666'}; font-weight:bold;">${promo.active ? 'ACTIVA' : 'INACTIVA'}</span>
                                         <input type="checkbox" id="promoActive${i}" ${promo.active ? 'checked' : ''}
-                                            onchange="document.querySelector('#promoStatus${i}').textContent = this.checked ? 'ACTIVA' : 'INACTIVA'; document.querySelector('#promoStatus${i}').style.color = this.checked ? '#c4ff00' : '#666';"
+                                            onchange="const lbl = document.querySelector('#promoStatusLabel${i}'); if(lbl){ lbl.textContent = this.checked ? 'ACTIVA' : 'INACTIVA'; lbl.style.color = this.checked ? '#c4ff00' : '#666'; }"
                                             style="width:18px; height:18px; accent-color:#c4ff00; cursor:pointer;">
-                                        <span id="promoStatus${i}" style="display:none;"></span>
                                     </label>
                                 </div>
                                 <div style="display:flex; gap:15px; flex-wrap:wrap;">

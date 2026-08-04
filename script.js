@@ -216,9 +216,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateGlobalUI();
                 // Cargar promos
                 promosData = siteConfig.promos || [];
-                if (!promosShownOnLoad && promosData.some(p => p.active)) {
+                const hasActivePromos = promosData.some(p => p && (p.active === true || p.active === 'true'));
+                if (!promosShownOnLoad && hasActivePromos) {
                     promosShownOnLoad = true;
-                    setTimeout(() => showIntroPromos(), 1500);
+                    setTimeout(() => showIntroPromos(), 1000);
                 }
             } catch(e) { console.error("Error al aplicar configuración:", e); }
         }
@@ -346,14 +347,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const promosOverlay = document.getElementById('promosOverlay');
     const promosCloseBtn = document.getElementById('promosCloseBtn');
 
+    let introTimer = null;
+
     function renderPromoCards(promos) {
-        const activePromos = promos.filter(p => p.active);
+        const activePromos = promos.filter(p => p && (p.active === true || p.active === 'true'));
         if (activePromos.length === 0) {
             promosOverlay.innerHTML = '';
             return;
         }
 
-        const cleanPhone = siteConfig.whatsapp.replace(/\+/g, '');
+        const rawPhone = siteConfig.whatsapp || '+595975634334';
+        const cleanPhone = rawPhone.replace(/\+/g, '').replace(/\s+/g, '').replace(/-/g, '');
 
         promosOverlay.innerHTML = activePromos.map(promo => `
             <div class="promo-card">
@@ -365,42 +369,42 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 </div>
                 <div class="promo-card-body">
-                    ${promo.title ? `<div class="promo-card-title">${promo.title}</div>` : ''}
-                    ${promo.description ? `<div class="promo-card-desc">${promo.description}</div>` : ''}
-                    ${promo.price ? `<div class="promo-card-price">${promo.price}</div>` : ''}
-                    <a href="https://wa.me/${cleanPhone}?text=${encodeURIComponent('Hola! Me interesa la promo: ' + (promo.title || 'Promoción'))}" target="_blank" class="promo-wa-btn">
-                        <i class='bx bxl-whatsapp'></i> Consultar
+                    <div>
+                        ${promo.title ? `<div class="promo-card-title">${promo.title}</div>` : ''}
+                        ${promo.description ? `<div class="promo-card-desc">${promo.description}</div>` : ''}
+                        ${promo.price ? `<div class="promo-card-price">${promo.price}</div>` : ''}
+                    </div>
+                    <a href="https://wa.me/${cleanPhone}?text=${encodeURIComponent('Hola! Me interesa la promo: ' + (promo.title || 'Promoción'))}" target="_blank" class="promo-wa-btn" title="Contactar por WhatsApp">
+                        <i class='bx bxl-whatsapp'></i> CONSULTAR POR WHATSAPP
                     </a>
                 </div>
             </div>
         `).join('');
     }
 
-    // Animación inicial al cargar la página (se muestran 5 segundos y desaparecen)
+    // Animación inicial al cargar la página (se muestran con backdrop y botón de cierre)
     function showIntroPromos() {
         renderPromoCards(promosData);
         const cards = promosOverlay.querySelectorAll('.promo-card');
         if (cards.length === 0) return;
 
-        // Entrada
-        cards.forEach(c => c.classList.add('intro-enter'));
+        // Activar overlay y mostrar botón cerrar
+        promosOverlay.classList.add('active', 'with-backdrop');
+        promosCloseBtn.classList.add('visible');
 
-        // Salida después de 5 segundos
-        setTimeout(() => {
-            cards.forEach(c => {
-                c.classList.remove('intro-enter');
-                c.classList.add('intro-exit');
-            });
-            // Limpiar después de la animación de salida
-            setTimeout(() => {
-                promosOverlay.innerHTML = '';
-                promosOverlay.classList.remove('active');
-            }, 800);
-        }, 5000);
+        // Animar entrada de las tarjetas
+        cards.forEach(c => c.classList.add('intro-enter', 'visible'));
+
+        // Cierre automático después de 7 segundos si no lo cierra el usuario
+        if (introTimer) clearTimeout(introTimer);
+        introTimer = setTimeout(() => {
+            closePromos();
+        }, 7000);
     }
 
     // Abrir promos desde el botón del modal de servicio
     window._openPromosFromModal = function() {
+        if (introTimer) { clearTimeout(introTimer); introTimer = null; }
         // Cerrar el modal de servicio
         infoModal.style.display = 'none';
         
@@ -415,14 +419,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 50);
     };
 
-    // Cerrar promos (botón X)
+    // Cerrar promos (botón X o click afuera)
     promosCloseBtn.addEventListener('click', closePromos);
     promosOverlay.addEventListener('click', (e) => {
         if (e.target === promosOverlay) closePromos();
     });
 
     function closePromos() {
-        promosOverlay.querySelectorAll('.promo-card').forEach(c => c.classList.remove('visible'));
+        if (introTimer) { clearTimeout(introTimer); introTimer = null; }
+        const cards = promosOverlay.querySelectorAll('.promo-card');
+        cards.forEach(c => {
+            c.classList.remove('intro-enter', 'visible');
+            c.classList.add('intro-exit');
+        });
         setTimeout(() => {
             promosOverlay.classList.remove('active', 'with-backdrop');
             promosCloseBtn.classList.remove('visible');
