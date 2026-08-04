@@ -15,10 +15,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    return res.status(500).json({ error: 'DATABASE_URL no está configurada en Vercel' });
-  }
+  const databaseUrl = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_zgtVeCf1Fn9q@ep-dry-shape-aybt06zh-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require';
 
   const sql = neon(databaseUrl);
 
