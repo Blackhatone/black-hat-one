@@ -44,10 +44,10 @@ export default async function handler(req, res) {
       }
 
       for (const s of rows) {
-        const imagesJson = typeof s.images === 'string' ? s.images : JSON.stringify(s.images || []);
+        const imagesVal = typeof s.images === 'string' ? s.images : JSON.stringify(s.images || []);
         await sql`
           INSERT INTO services (id, title, icon, content, images)
-          VALUES (${s.id}, ${s.title || ''}, ${s.icon || ''}, ${s.content || ''}, ${imagesJson}::jsonb)
+          VALUES (${s.id}, ${s.title || ''}, ${s.icon || ''}, ${s.content || ''}, ${imagesVal})
           ON CONFLICT (id) DO UPDATE SET
             title = EXCLUDED.title,
             icon = EXCLUDED.icon,
