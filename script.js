@@ -157,71 +157,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ==================== Inicialización Global ====================
-    async function handleVisitorCount() {
+    async function handleVisitorCount(allData) {
         try {
-            // 1. Intentar obtener el conteo actual
-            let { data, error } = await window.supabaseClient
-                .from('services')
-                .select('content')
-                .eq('id', '__visitor_count__')
-                .single();
-
-            // Si hay error y es porque no existe, crearemos el registro
-            if (error && error.code === 'PGRST116') {
-                console.log("Iniciando contador por primera vez...");
-                await window.supabaseClient.from('services').insert({
-                    id: '__visitor_count__',
-                    title: 'Visitor Count',
-                    content: '1',
-                    icon: 'bx-user'
-                });
-                return;
-            }
-
-            let currentCount = (data && data.content) ? parseInt(data.content) : 0;
+            const visitorRow = allData.find(s => s.id === '__visitor_count__');
+            let currentCount = (visitorRow && visitorRow.content) ? parseInt(visitorRow.content) : 0;
             currentCount++;
-            
-            // 2. Incrementar siempre (Cambiado de visitantes únicos a vistas totales para mayor dinamismo)
-            await window.supabaseClient
-                .from('services')
-                .upsert({ 
-                    id: '__visitor_count__', 
-                    title: 'Visitor Count', 
-                    content: currentCount.toString(),
-                    icon: 'bx-user'
-                });
 
+            const newVisitorRow = {
+                id: '__visitor_count__',
+                title: 'Visitor Count',
+                content: currentCount.toString(),
+                icon: 'bx-user',
+                images: []
+            };
+
+            await fetch('/api/services', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rows: [newVisitorRow] })
+            });
         } catch (e) {
             console.error("Error en contador:", e);
         }
     }
 
     async function init() {
-        // Intentar registrar la visita inmediatamente
-        handleVisitorCount();
-
         try {
-            const { data, error } = await window.supabaseClient.from('services').select('*').order('id', { ascending: true });
-            if (!error && data && data.length > 0) {
-                applyServicesData(data);
-            } else {
-                console.warn('Cargando respaldo local desde data.json...');
-                fetch('./data.json').then(r => r.json()).then(d => { if (d && d.services) applyServicesData(d.services); });
+            const res = await fetch('/api/services');
+            if (res.ok) {
+                const json = await res.json();
+                if (json && json.data && json.data.length > 0) {
+                    applyServicesData(json.data);
+                    handleVisitorCount(json.data);
+                    return;
+                }
             }
+            console.warn('Cargando respaldo local desde data.json...');
+            fetch('./data.json').then(r => r.json()).then(d => { if (d && d.services) applyServicesData(d.services); });
         } catch (err) {
-            console.error('Error al conectar con base de datos, cargando respaldo:', err);
+            console.error('Error conectando a /api/services, usando respaldo local:', err);
             fetch('./data.json').then(r => r.json()).then(d => { if (d && d.services) applyServicesData(d.services); });
         }
-
-        try {
-            window.supabaseClient
-                .channel('services-realtime')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'services' }, async () => {
-                    const { data, error } = await window.supabaseClient.from('services').select('*').order('id', { ascending: true });
-                    if (!error && data) applyServicesData(data);
-                })
-                .subscribe();
-        } catch (e) {}
     }
 
     init();

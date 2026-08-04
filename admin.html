@@ -562,24 +562,33 @@
         let selectedFiles = []; 
         const BUCKET_NAME = 'images';
 
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = err => reject(err);
+            });
+        }
+
         async function fetchServices() {
             let allData = [];
             try {
-                const { data, error } = await window.supabaseClient.from('services').select('*');
-                if (!error && data && data.length > 0) {
-                    allData = data;
-                } else {
-                    console.warn("Intentando cargar data.json de respaldo...");
-                    const res = await fetch('./data.json');
+                const res = await fetch('/api/services');
+                if (res.ok) {
                     const json = await res.json();
-                    if (json && json.services) allData = json.services;
+                    if (json && json.data && json.data.length > 0) {
+                        allData = json.data;
+                    }
                 }
-            } catch(e) {
+            } catch(e) {}
+
+            if (allData.length === 0) {
                 try {
                     const res = await fetch('./data.json');
                     const json = await res.json();
                     if (json && json.services) allData = json.services;
-                } catch(err) {}
+                } catch(e) {}
             }
             let configRow = allData.find(s => s.id === '__site_config__');
             
@@ -870,30 +879,26 @@
             const description = document.getElementById('newPostText').value.trim();
             const s = services[currentServiceIndex];
             
-            showStatus(`Subiendo ${selectedFiles.length} imagen(es)...`, 'loading');
+            showStatus(`Procesando ${selectedFiles.length} imagen(es)...`, 'loading');
             
             const uploadedUrls = [];
-            
             for (const file of selectedFiles) {
-                const ext = file.name.split('.').pop();
-                const fileName = `${s.id}-${Date.now()}-${Math.floor(Math.random()*1000)}.${ext}`;
-                const { error: uploadError } = await window.supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file);
-                
-                if (!uploadError) {
-                    const { data: urlData } = window.supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName);
-                    uploadedUrls.push(urlData.publicUrl);
-                } else {
-                    console.error('Error al subir una imagen:', uploadError);
+                try {
+                    const b64 = await fileToBase64(file);
+                    uploadedUrls.push(b64);
+                } catch (e) {
+                    console.error('Error al procesar imagen:', e);
                 }
             }
 
             if (uploadedUrls.length > 0) {
+                s.images = s.images || [];
                 s.images.unshift({ urls: uploadedUrls, description: description });
                 selectedFiles = [];
                 renderEditor(currentServiceIndex);
                 showStatus('Publicación añadida correctamente. No olvides "Guardar Cambios".', 'success');
             } else {
-                showStatus('Error al subir las imágenes.', 'error');
+                showStatus('Error al procesar las imágenes.', 'error');
             }
         }
         function updatePostsList() {
@@ -902,7 +907,7 @@
             list.innerHTML = '';
             const s = services[currentServiceIndex];
 
-            s.images.forEach((post, postIdx) => {
+            (s.images || []).forEach((post, postIdx) => {
                 const urls = post.urls || (post.url ? [post.url] : []);
                 
                 const div = document.createElement('div');
@@ -926,7 +931,7 @@
                             </button>
                         </div>
                         <div class="post-text">
-                            <textarea onchange="updatePostDesc(${postIdx}, this.value)" placeholder="Sin descripción..." style="height:70px;">${post.description}</textarea>
+                            <textarea onchange="updatePostDesc(${postIdx}, this.value)" placeholder="Sin descripción..." style="height:70px;">${post.description || ''}</textarea>
                         </div>
                         <div class="post-actions" style="margin-top:5px;">
                             <button class="btn btn-outline" onclick="movePost(${postIdx}, -1)" title="Subir" style="padding: 5px 10px;">
@@ -969,33 +974,28 @@
             const s = services[currentServiceIndex];
             const post = s.images[postIdx];
             
-            showStatus(`Añadiendo ${files.length} imagen(es)...`, 'loading');
+            showStatus(`Procesando ${files.length} imagen(es)...`, 'loading');
             
-            // Asegurarse de tener formato array
             if (!post.urls) {
                 post.urls = post.url ? [post.url] : [];
                 delete post.url;
             }
 
             for (const file of files) {
-                const ext = file.name.split('.').pop();
-                const fileName = `${s.id}-${Date.now()}-${Math.floor(Math.random()*1000)}.${ext}`;
-                const { error: uploadError } = await window.supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file);
-                
-                if (!uploadError) {
-                    const { data: urlData } = window.supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName);
-                    post.urls.push(urlData.publicUrl);
-                }
+                try {
+                    const b64 = await fileToBase64(file);
+                    post.urls.push(b64);
+                } catch(e) {}
             }
             
             updatePostsList();
             showStatus('Imágenes añadidas. ¡Recuerda Guardar Cambios!', 'success');
         };
+
         window.movePost = (i, dir) => {
             const images = services[currentServiceIndex].images;
             const newIdx = i + dir;
             if (newIdx < 0 || newIdx >= images.length) return;
-            // Intercambiar elementos
             const temp = images[i];
             images[i] = images[newIdx];
             images[newIdx] = temp;
@@ -1017,32 +1017,31 @@
                 return;
             }
 
-            showStatus('Eliminando categoría de la base de datos...', 'loading');
+            showStatus('Eliminando categoría de Neon PostgreSQL...', 'loading');
             
             try {
-                // 1. Borrar de Supabase
-                const { error } = await window.supabaseClient.from('services').delete().eq('id', s.id);
-                
-                if (error) {
-                    showStatus('Error al eliminar: ' + error.message, 'error');
+                const res = await fetch(`/api/services?id=${encodeURIComponent(s.id)}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const errData = await res.json();
+                    showStatus('Error al eliminar: ' + (errData.error || res.statusText), 'error');
                     return;
                 }
 
-                // 2. Eliminar del array local
                 services.splice(currentServiceIndex, 1);
                 
-                // 3. Actualizar la configuración global (categoryOrder)
                 const configRow = services.find(srv => srv.id === '__site_config__');
                 if (configRow) {
                     let cfg = {};
                     try { cfg = typeof configRow.content === 'string' ? JSON.parse(configRow.content) : configRow.content || {}; } catch(e) {}
                     cfg.categoryOrder = services.map(srv => srv.id);
                     configRow.content = JSON.stringify(cfg);
-                    // Guardar la config actualizada inmediatamente para persistir el nuevo orden
-                    await window.supabaseClient.from('services').upsert([configRow]);
+                    await fetch('/api/services', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rows: [configRow] })
+                    });
                 }
 
-                // 4. Resetear vista
                 currentServiceIndex = 0; 
                 renderSelector();
                 renderEditor(currentServiceIndex);
@@ -1057,11 +1056,10 @@
         async function saveService() {
             const btn = document.getElementById('saveBtn');
             btn.disabled = true; btn.innerHTML = "Guardando...";
-            showStatus('Sincronizando con base de datos...', 'loading');
+            showStatus('Sincronizando con Neon PostgreSQL en Vercel...', 'loading');
 
             const s = services[currentServiceIndex];
             
-            // Sincronizar el orden de las categorías en la configuración global antes de cualquier guardado
             const configRow = services.find(srv => srv.id === '__site_config__');
             if (configRow) {
                 let cfg = {};
@@ -1075,13 +1073,13 @@
                 const email = document.getElementById('configEmail').value.trim();
                 const ig = document.getElementById('configIg').value.trim();
                 const fb = document.getElementById('configFb').value.trim();
-                let cfg = JSON.parse(s.content);
+                let cfg = {};
+                try { cfg = JSON.parse(s.content); } catch(e) {}
                 cfg.whatsapp = wa;
                 cfg.email = email;
                 cfg.instagram = ig;
                 cfg.facebook = fb;
                 
-                // Guardar promociones
                 cfg.promos = [0, 1, 2].map(i => ({
                     title: document.getElementById(`promoTitle${i}`).value.trim(),
                     description: document.getElementById(`promoDesc${i}`).value.trim(),
@@ -1096,7 +1094,6 @@
                 s.icon = document.getElementById('fieldIcon').value.trim();
                 s.content = document.getElementById('fieldContent').value.trim();
                 
-                // LIMPIEZA DE DATOS: Asegurar que el array de imágenes esté limpio
                 if (Array.isArray(s.images)) {
                     s.images = s.images.map(post => {
                         const clean = { description: post.description || '' };
@@ -1110,23 +1107,23 @@
                 }
             }
 
-            // PREPARAR LOTE: Guardar el servicio actual Y la configuración (orden/contactos)
             const rowsToSave = [s];
             if (configRow && configRow.id !== s.id) {
                 rowsToSave.push(configRow);
             }
 
-            console.log("INTENTANDO GUARDAR LOTE:", rowsToSave);
-
             try {
-                const { data, error } = await window.supabaseClient.from('services').upsert(rowsToSave).select();
-                
-                if (error) {
-                    console.error("ERROR DE SUPABASE AL GUARDAR:", error);
-                    showStatus('Error de base de datos: ' + error.message, 'error');
+                const res = await fetch('/api/services', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rows: rowsToSave })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    showStatus('Error al guardar: ' + (errData.error || res.statusText), 'error');
                 } else {
-                    console.log("RESPUESTA EXITOSA DE SUPABASE:", data);
-                    showStatus('✔ ¡Todo guardado y sincronizado correctamente!', 'success');
+                    showStatus('✔ ¡Todo guardado y sincronizado correctamente en Neon!', 'success');
                     renderSelector();
                     renderEditor(currentServiceIndex);
                 }
@@ -1145,32 +1142,22 @@
             if (type === 'success') setTimeout(() => bar.style.display = 'none', 3000);
         }
 
-        // ===== Upload de imágenes de promo =====
         window.uploadPromoImage = async function(index, input) {
             if (!input.files || input.files.length === 0) return;
             const file = input.files[0];
-            const ext = file.name.split('.').pop();
-            const fileName = `promo-${index}-${Date.now()}.${ext}`;
-            
-            showStatus(`Subiendo imagen de promo ${index + 1}...`, 'loading');
-            
-            const { error: uploadError } = await window.supabaseClient.storage.from(BUCKET_NAME).upload(fileName, file);
-            
-            if (!uploadError) {
-                const { data: urlData } = window.supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(fileName);
-                const url = urlData.publicUrl;
-                
-                // Actualizar hidden input y preview
-                document.getElementById(`promoImageUrl${index}`).value = url;
+            showStatus(`Procesando imagen de promo ${index + 1}...`, 'loading');
+            try {
+                const b64 = await fileToBase64(file);
+                document.getElementById(`promoImageUrl${index}`).value = b64;
                 const preview = document.getElementById(`promoImgPreview${index}`);
                 preview.innerHTML = `
-                    <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
+                    <img src="${b64}" style="width:100%; height:100%; object-fit:cover;">
                     <input type="file" accept="image/*" onchange="uploadPromoImage(${index}, this)"
                         style="position:absolute; inset:0; opacity:0; cursor:pointer;">
                 `;
-                showStatus(`✔ Imagen de promo ${index + 1} subida. No olvides Guardar Cambios.`, 'success');
-            } else {
-                showStatus('Error al subir imagen: ' + uploadError.message, 'error');
+                showStatus(`✔ Imagen de promo ${index + 1} cargada. No olvides Guardar Cambios.`, 'success');
+            } catch(e) {
+                showStatus('Error al procesar imagen de promo.', 'error');
             }
         };
     </script>
