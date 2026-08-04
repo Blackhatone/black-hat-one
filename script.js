@@ -202,22 +202,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const { data, error } = await window.supabaseClient.from('services').select('*').order('id', { ascending: true });
-            if (error) console.error('Error cargando datos de Supabase:', error);
-            else if (data && data.length > 0) {
+            if (!error && data && data.length > 0) {
                 applyServicesData(data);
+            } else {
+                console.warn('Cargando respaldo local desde data.json...');
+                fetch('./data.json').then(r => r.json()).then(d => { if (d && d.services) applyServicesData(d.services); });
             }
         } catch (err) {
-            console.error('Error inesperado al conectar con Supabase:', err);
+            console.error('Error al conectar con base de datos, cargando respaldo:', err);
+            fetch('./data.json').then(r => r.json()).then(d => { if (d && d.services) applyServicesData(d.services); });
         }
 
-        // Suscribirse a cambios en tiempo real
-        window.supabaseClient
-            .channel('services-realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'services' }, async () => {
-                const { data, error } = await window.supabaseClient.from('services').select('*').order('id', { ascending: true });
-                if (!error && data) applyServicesData(data);
-            })
-            .subscribe();
+        try {
+            window.supabaseClient
+                .channel('services-realtime')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'services' }, async () => {
+                    const { data, error } = await window.supabaseClient.from('services').select('*').order('id', { ascending: true });
+                    if (!error && data) applyServicesData(data);
+                })
+                .subscribe();
+        } catch (e) {}
     }
 
     init();

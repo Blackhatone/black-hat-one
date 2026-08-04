@@ -563,10 +563,24 @@
         const BUCKET_NAME = 'images';
 
         async function fetchServices() {
-            const { data, error } = await window.supabaseClient.from('services').select('*');
-            if (error) { showStatus('Error cargando datos: ' + error.message, 'error'); return; }
-            
-            let allData = data || [];
+            let allData = [];
+            try {
+                const { data, error } = await window.supabaseClient.from('services').select('*');
+                if (!error && data && data.length > 0) {
+                    allData = data;
+                } else {
+                    console.warn("Intentando cargar data.json de respaldo...");
+                    const res = await fetch('./data.json');
+                    const json = await res.json();
+                    if (json && json.services) allData = json.services;
+                }
+            } catch(e) {
+                try {
+                    const res = await fetch('./data.json');
+                    const json = await res.json();
+                    if (json && json.services) allData = json.services;
+                } catch(err) {}
+            }
             let configRow = allData.find(s => s.id === '__site_config__');
             
             if (!configRow) {
