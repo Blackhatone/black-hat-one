@@ -240,6 +240,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 3. Mapear servicios y preparar lista para el menú
         data.forEach(service => { 
             if (service.id !== '__site_config__' && service.id !== '__visitor_count__') {
+                if (typeof service.images === 'string') {
+                    try { service.images = JSON.parse(service.images); } catch(e) { service.images = []; }
+                }
+                if (!Array.isArray(service.images)) service.images = [];
                 servicesData[service.id] = service;
                 menuServices.push(service);
             }

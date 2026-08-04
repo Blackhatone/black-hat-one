@@ -562,12 +562,30 @@
         let selectedFiles = []; 
         const BUCKET_NAME = 'images';
 
-        function fileToBase64(file) {
+        function compressImageFile(file, maxWidth = 1000, quality = 0.7) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = err => reject(err);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxWidth) {
+                            h = Math.round((h * maxWidth) / w);
+                            w = maxWidth;
+                        }
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = (err) => reject(err);
+                };
+                reader.onerror = (err) => reject(err);
             });
         }
 
@@ -590,6 +608,14 @@
                     if (json && json.services) allData = json.services;
                 } catch(e) {}
             }
+
+            allData.forEach(s => {
+                if (typeof s.images === 'string') {
+                    try { s.images = JSON.parse(s.images); } catch(e) { s.images = []; }
+                }
+                if (!Array.isArray(s.images)) s.images = [];
+            });
+
             let configRow = allData.find(s => s.id === '__site_config__');
             
             if (!configRow) {
@@ -879,12 +905,12 @@
             const description = document.getElementById('newPostText').value.trim();
             const s = services[currentServiceIndex];
             
-            showStatus(`Procesando ${selectedFiles.length} imagen(es)...`, 'loading');
+            showStatus(`Comprimiendo y procesando ${selectedFiles.length} imagen(es)...`, 'loading');
             
             const uploadedUrls = [];
             for (const file of selectedFiles) {
                 try {
-                    const b64 = await fileToBase64(file);
+                    const b64 = await compressImageFile(file);
                     uploadedUrls.push(b64);
                 } catch (e) {
                     console.error('Error al procesar imagen:', e);
@@ -895,6 +921,9 @@
                 s.images = s.images || [];
                 s.images.unshift({ urls: uploadedUrls, description: description });
                 selectedFiles = [];
+                document.getElementById('newPostText').value = '';
+                const preview = document.getElementById('imagePreviewContainer');
+                if (preview) preview.innerHTML = '<i class="bx bx-camera" style="font-size: 2rem; color: var(--neon-cyan);"></i>';
                 renderEditor(currentServiceIndex);
                 showStatus('Publicación añadida correctamente. No olvides "Guardar Cambios".', 'success');
             } else {
@@ -931,7 +960,7 @@
                             </button>
                         </div>
                         <div class="post-text">
-                            <textarea onchange="updatePostDesc(${postIdx}, this.value)" placeholder="Sin descripción..." style="height:70px;">${post.description || ''}</textarea>
+                            <textarea oninput="updatePostDesc(${postIdx}, this.value)" placeholder="Sin descripción..." style="height:70px;">${post.description || ''}</textarea>
                         </div>
                         <div class="post-actions" style="margin-top:5px;">
                             <button class="btn btn-outline" onclick="movePost(${postIdx}, -1)" title="Subir" style="padding: 5px 10px;">
@@ -974,7 +1003,7 @@
             const s = services[currentServiceIndex];
             const post = s.images[postIdx];
             
-            showStatus(`Procesando ${files.length} imagen(es)...`, 'loading');
+            showStatus(`Comprimiendo y procesando ${files.length} imagen(es)...`, 'loading');
             
             if (!post.urls) {
                 post.urls = post.url ? [post.url] : [];
@@ -983,7 +1012,7 @@
 
             for (const file of files) {
                 try {
-                    const b64 = await fileToBase64(file);
+                    const b64 = await compressImageFile(file);
                     post.urls.push(b64);
                 } catch(e) {}
             }
@@ -1145,9 +1174,9 @@
         window.uploadPromoImage = async function(index, input) {
             if (!input.files || input.files.length === 0) return;
             const file = input.files[0];
-            showStatus(`Procesando imagen de promo ${index + 1}...`, 'loading');
+            showStatus(`Comprimiendo imagen de promo ${index + 1}...`, 'loading');
             try {
-                const b64 = await fileToBase64(file);
+                const b64 = await compressImageFile(file);
                 document.getElementById(`promoImageUrl${index}`).value = b64;
                 const preview = document.getElementById(`promoImgPreview${index}`);
                 preview.innerHTML = `
