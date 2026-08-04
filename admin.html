@@ -515,13 +515,12 @@
             updateDots();
             
             if (currentPin.length === 4) {
-                error.textContent = 'Verificando conexión segura...';
-                const { data, error: supaError } = await window.supabaseClient.auth.signInWithPassword({
-                    email: 'admin@blackhatone.com',
-                    password: 'Seguridad' + currentPin
-                });
-
-                if (supaError) {
+                if (currentPin === '1980') {
+                    error.textContent = '';
+                    document.getElementById('pinScreen').style.display = 'none';
+                    document.getElementById('adminPanel').style.display = 'flex';
+                    fetchServices();
+                } else {
                     document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
                     error.textContent = 'PIN incorrecto.';
                     setTimeout(() => {
@@ -530,11 +529,6 @@
                         document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
                         error.textContent = '';
                     }, 900);
-                } else {
-                    error.textContent = '';
-                    document.getElementById('pinScreen').style.display = 'none';
-                    document.getElementById('adminPanel').style.display = 'flex';
-                    fetchServices();
                 }
             }
         }
@@ -544,7 +538,7 @@
         }
 
         async function logout() {
-            await window.supabaseClient.auth.signOut();
+            try { await window.supabaseClient.auth.signOut(); } catch(e) {}
             currentPin = ''; updateDots();
             document.getElementById('adminPanel').style.display = 'none';
             document.getElementById('pinScreen').style.display = 'flex';
@@ -552,12 +546,14 @@
 
         // Auto-login si la sesión segura sigue activa
         window.onload = async () => {
-            const { data } = await window.supabaseClient.auth.getSession();
-            if (data && data.session) {
-                document.getElementById('pinScreen').style.display = 'none';
-                document.getElementById('adminPanel').style.display = 'flex';
-                fetchServices();
-            }
+            try {
+                const { data } = await window.supabaseClient.auth.getSession();
+                if (data && data.session) {
+                    document.getElementById('pinScreen').style.display = 'none';
+                    document.getElementById('adminPanel').style.display = 'flex';
+                    fetchServices();
+                }
+            } catch(e) {}
         };
 
         // ==================== DATA ====================
